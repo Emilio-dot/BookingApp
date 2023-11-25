@@ -1,10 +1,9 @@
 const express = require('express');
 const mongoose = require("mongoose")
-const cors = require('cors');
-require('dotenv').config();
+const cors = require('cors'); require('dotenv').config();
 const app = express();
 const User = require('./models/User.js');
-const CookieParser = require('cookie-parser');
+const Place = require('./models/Place.js')
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const bcryptSalt = bcrypt.genSaltSync(10);
@@ -76,7 +75,7 @@ app.get('/profile',(req,res) => {
             if (err) throw err;
             const {name, email, _id} = await User.findById(userData.id);
             res.json({name, email, _id});
-        })
+        });
     }else {
         res.json(null)
     }
@@ -88,31 +87,62 @@ app.post('/logout', (req, res) => {
 
 
 
+console.log({__dirname});
 
-app.post('/api/upload-by-link', async (req,res) => {
+app.post('/upload-by-link', async (req,res) => {
     const {link} = req.body;
     const newName = 'photo' + Date.now() + '.jpg';
     await imageDownloader.image({
       url: link,
-      dest: '/tmp/' +newName,
+      dest: __dirname  + '/uploads/' +newName,
     });
-    const url = await uploadToS3('/tmp/' +newName, newName, mime.lookup('/tmp/' +newName));
-    res.json(url);
-  });
+    res.json(newName);
+});
 
-const photosMiddleware = multer({dest:'uploads/'});
-app.post('/upload', photosMiddleware.array('photos', 100), (req,res) => {
+
+const photosMiddleware = multer ({dest:'uploads/'});
+app.post('/upload', photosMiddleware.array('photos', 100),(req,res) => {
     const uploadedFiles = [];
-    for (let i = 0; i < req.files.length; i++) {
-        const {path,originalname} = req.files[i];
-        const parts = originalname.split ('.');
-        const ext = parts[parts.length -1];
-        const newPath = path + '.' + ext;
+    for (let i = 0; i < req.files.length; i++){
+        const {path, originalname} = req.files[i];
+        const parts = originalname.split('.');
+        const ext = parts[parts.length - 1];
+        const newName = 'photo' + Date.now() + '.' + ext;
+        const newPath = __dirname + '/uploads/' + newName;
         fs.renameSync(path, newPath);
-        uploadedFiles.push(newPath.replace('uploads/',''));
+        uploadedFiles.push(newName);
     }
     res.json(uploadedFiles);
 });
+
+app.post ('/places',  (req,res) => {
+    const {token} = req.cookies;
+    const {title, 
+        address, 
+        addedPhotos, 
+        description, 
+        perks, 
+        extraInfo, 
+        checkIn, 
+        checkOut, 
+        maxGuests,} =req.body;
+    jwt.verify(token, jwtSecret, {}, async (err, userData) => {
+        if (err) throw err;
+        const placeDoc = await Place.create({
+            owner:userData.id,title, 
+            address, 
+            addedPhotos, 
+            description, 
+            perks, 
+            extraInfo, 
+            checkIn, 
+            checkOut, 
+            maxGuests,
+        });
+        res.json(placeDoc)
+    }); 
+});
+
 
 
 app.listen(4000);

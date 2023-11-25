@@ -1,21 +1,12 @@
 export default function Perks({selected,onChange}) {
-  function handleCbClick(ev) {
-    const {checked,name} = ev.target;
-    if (checked) {
-      onChange([...selected,name]);
-    } else {
-      onChange([...selected.filter(selectedName => selectedName !== name)]);
-    }
-  }
-
   function handleCbClick(ev){
     const {checked, name} = ev.target;
     if (checked) {
-      onChange([...selected,name]);
+      onChange([...selected, name])
     } else {
-      onChange([...selected.filter(selectedselectedName => selectedName !== name)]);
+      onChange([...selected.filter(selectedName => selectedName !== name)]);
     }
-    //
+    
   }
   return (
     <>
